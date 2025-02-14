@@ -92,7 +92,6 @@ function getNodeColor(node) {
 function updatePortInfo(portData) {
     const node = d3.select(`.node:has(text:contains("${portData.host}"))`);
     if (!node.empty()) {
-        // Create or update the port information display
         let infoDiv = document.getElementById(`port-info-${portData.port}`);
         if (!infoDiv) {
             infoDiv = document.createElement('div');
@@ -118,10 +117,14 @@ function updatePortInfo(portData) {
             `;
         }
 
+        // Basic port information (always shown)
         infoDiv.innerHTML = `
             <div class="card-body">
                 <h5 class="card-title">Port ${portData.port} - ${portData.service}</h5>
-                <p class="card-text">Status: <span class="badge bg-${portData.state === 'open' ? 'success' : 'danger'}">${portData.state}</span></p>
+                <p class="card-text">
+                    Status: <span class="badge bg-${portData.state === 'open' ? 'success' : 'danger'}">${portData.state}</span>
+                    ${portData.state === 'open' ? `<span class="badge bg-warning ms-2">Service: ${portData.service || 'Unknown'}</span>` : ''}
+                </p>
                 ${vulnHtml}
                 ${!portData.is_pro && portData.state === 'open' ? `
                     <div class="pro-upgrade-hint">

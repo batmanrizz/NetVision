@@ -85,22 +85,23 @@ class NetworkScanner:
                             'is_pro': self.is_pro
                         }
 
-                        # Add vulnerability information
-                        if self.is_pro:
-                            # Pro version: Get detailed vulnerability data from scripts
-                            if 'script' in port_info:
-                                port_data['vulnerabilities'] = {
-                                    'level': 'advanced',
-                                    'details': port_info['script'],
-                                    'version_info': port_info.get('version', ''),
-                                    'cpe': port_info.get('cpe', ''),
-                                    'recommendations': self._get_advanced_recommendations(port_info)
-                                }
-                        else:
-                            # Free version: Basic vulnerability checks
-                            vuln_info = self._get_basic_vulnerability_info(port, port_info.get('name', ''))
-                            if vuln_info:
-                                port_data['vulnerabilities'] = vuln_info
+                        # Add vulnerability information if port is open
+                        if port_info['state'] == 'open':
+                            if self.is_pro:
+                                # Pro version: Get detailed vulnerability data from scripts
+                                if 'script' in port_info:
+                                    port_data['vulnerabilities'] = {
+                                        'level': 'advanced',
+                                        'details': port_info['script'],
+                                        'version_info': port_info.get('version', ''),
+                                        'cpe': port_info.get('cpe', ''),
+                                        'recommendations': self._get_advanced_recommendations(port_info)
+                                    }
+                            else:
+                                # Free version: Basic vulnerability checks
+                                vuln_info = self._get_basic_vulnerability_info(port, port_info.get('name', ''))
+                                if vuln_info:
+                                    port_data['vulnerabilities'] = vuln_info
 
                         host_data['ports'].append(port_data)
                         self.socketio.emit('port_data', port_data)
