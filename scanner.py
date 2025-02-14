@@ -31,12 +31,12 @@ class NetworkScanner:
         try:
             self.socketio.emit('scan_status', {'status': 'starting'})
 
-            # Basic scan arguments for free version
-            scan_args = '-sS'  # SYN scan
+            # Basic scan arguments - TCP Connect scan doesn't require root
+            scan_args = '-sT'  
 
-            # Enhanced scanning for pro version
+            # Enhanced scanning for pro version - include version detection
             if self.is_pro:
-                scan_args = '-sV -sS -O'  # Include service detection and OS detection
+                scan_args = '-sT -sV'  # TCP Connect scan with version detection
 
             # Start the scan
             self.nm.scan(target, ports, arguments=scan_args)
@@ -51,9 +51,6 @@ class NetworkScanner:
                     'ports': [],
                     'is_pro': self.is_pro
                 }
-
-                if self.is_pro and 'osmatch' in self.nm[host]:
-                    host_data['os'] = self.nm[host]['osmatch']
 
                 for proto in self.nm[host].all_protocols():
                     ports = self.nm[host][proto].keys()
