@@ -1,5 +1,5 @@
-git clone https://github.com/yourusername/netvision.git
-cd netvision
+git clone https://github.com/batmanrizz/NetVision.git
+cd NetVision
 ```
 
 2. Install dependencies:

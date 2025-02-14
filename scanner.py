@@ -28,7 +28,6 @@ class NetworkScanner:
     def start_scan(self, target, ports):
         if self.scanning:
             return
-
         self.scanning = True
         scan_thread = threading.Thread(target=self._scan_worker, args=(target, ports))
         scan_thread.daemon = True
