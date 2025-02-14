@@ -6,14 +6,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const scanStatus = document.getElementById('scanStatus');
     const proBanner = document.querySelector('.pro-banner');
 
-    // Show pro banner after a short delay
-    setTimeout(() => {
-        proBanner.style.display = 'block';
-    }, 2000);
+    setTimeout(() => proBanner.style.display = 'block', 2000);
 
-    socket.on('connect', () => {
-        console.log('Connected to server');
-    });
+    socket.on('connect', () => {});
 
     socket.on('scan_status', (data) => {
         switch(data.status) {
@@ -49,19 +44,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    socket.on('port_data', (data) => {
-        updatePortInfo(data);
-    });
+    socket.on('port_data', (data) => updatePortInfo(data));
 
     scanForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const target = document.getElementById('target').value;
         const ports = document.getElementById('ports').value;
-
-        socket.emit('start_scan', {
-            target: target,
-            ports: ports
-        });
+        socket.emit('start_scan', { target, ports });
     });
 
     stopScanBtn.addEventListener('click', () => {

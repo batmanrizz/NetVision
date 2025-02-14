@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     setTimeout(() => proBanner.style.display = 'block', 2000);
 
-    socket.on('connect', () => console.log('Connected to server'));
+    socket.on('connect', () => {});
 
     socket.on('scan_status', (data) => {
         switch(data.status) {
