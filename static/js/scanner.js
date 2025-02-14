@@ -4,6 +4,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const startScanBtn = document.getElementById('startScan');
     const stopScanBtn = document.getElementById('stopScan');
     const scanStatus = document.getElementById('scanStatus');
+    const proBanner = document.querySelector('.pro-banner');
+
+    // Show pro banner after a short delay
+    setTimeout(() => {
+        proBanner.style.display = 'block';
+    }, 2000);
 
     socket.on('connect', () => {
         console.log('Connected to server');
@@ -35,6 +41,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     socket.on('host_data', (data) => {
         updateVisualization(data);
+        if (data.os) {
+            const osInfo = document.createElement('div');
+            osInfo.className = 'alert alert-info mt-2';
+            osInfo.textContent = `OS Detection: ${data.os[0].name} (${data.os[0].accuracy}% accuracy)`;
+            scanStatus.parentNode.appendChild(osInfo);
+        }
     });
 
     socket.on('port_data', (data) => {
@@ -45,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         const target = document.getElementById('target').value;
         const ports = document.getElementById('ports').value;
-        
+
         socket.emit('start_scan', {
             target: target,
             ports: ports

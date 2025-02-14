@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="pro-banner alert alert-info" style="display: none;">
+    <strong>Pro Feature Available!</strong> 
+    Upgrade to Pro version for advanced scanning features including service detection, OS fingerprinting, and detailed port information.
+    <a href="https://github.com/yourusername/network-scanner-pro" class="btn btn-primary btn-sm ms-3">Get Pro Version</a>
+</div>
+
 <div class="row">
     <div class="col-md-4">
         <div class="card bg-dark">
@@ -14,6 +20,14 @@
                     <div class="mb-3">
                         <label for="ports" class="form-label">Ports (e.g., 1-1000)</label>
                         <input type="text" class="form-control" id="ports" value="1-1000">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="advancedScan" disabled>
+                            <label class="form-check-label" for="advancedScan">
+                                Advanced Scan (Pro Feature) 🌟
+                            </label>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary" id="startScan">Start Scan</button>
                     <button type="button" class="btn btn-danger" id="stopScan" disabled>Stop Scan</button>
