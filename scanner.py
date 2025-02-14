@@ -11,7 +11,6 @@ class NetworkScanner:
         self.scanning = False
         self.logger = logging.getLogger(__name__)
         self.is_pro = False
-
         self.common_vulns = {
             21: "FTP - Potential anonymous access, clear-text authentication",
             22: "SSH - Check for outdated versions, weak ciphers",

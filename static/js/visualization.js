@@ -7,13 +7,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const proBanner = document.querySelector('.pro-banner');
     const scanResults = document.querySelector('.scan-results');
 
-    setTimeout(() => {
-        proBanner.style.display = 'block';
-    }, 2000);
+    setTimeout(() => proBanner.style.display = 'block', 2000);
 
-    socket.on('connect', () => {
-        console.log('Connected to server');
-    });
+    socket.on('connect', () => console.log('Connected to server'));
 
     socket.on('scan_status', (data) => {
         switch(data.status) {
@@ -40,9 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
         stopScanBtn.disabled = true;
     });
 
-    socket.on('port_data', (data) => {
-        updatePortInfo(data);
-    });
+    socket.on('port_data', (data) => updatePortInfo(data));
 
     scanForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -130,7 +124,6 @@ function updateVisualization(hostData) {
                 .attr('y1', d => d.source.y)
                 .attr('x2', d => d.target.x)
                 .attr('y2', d => d.target.y);
-
             node.attr('transform', d => `translate(${d.x},${d.y})`);
         });
 
@@ -139,7 +132,8 @@ function updateVisualization(hostData) {
 }
 
 function getNodeColor(node) {
-    return node.ports && node.ports.some(p => p.vulnerabilities) ? '#ff4444' : node.status === 'up' ? '#4CAF50' : '#666';
+    return node.ports && node.ports.some(p => p.vulnerabilities) ? '#ff4444' : 
+           node.status === 'up' ? '#4CAF50' : '#666';
 }
 
 function updatePortInfo(portData) {
