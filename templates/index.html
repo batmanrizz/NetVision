@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card bg-dark">
+            <div class="card-body">
+                <h5 class="card-title">Scan Configuration</h5>
+                <form id="scanForm">
+                    <div class="mb-3">
+                        <label for="target" class="form-label">Target IP/Network</label>
+                        <input type="text" class="form-control" id="target" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ports" class="form-label">Ports (e.g., 1-1000)</label>
+                        <input type="text" class="form-control" id="ports" value="1-1000">
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="startScan">Start Scan</button>
+                    <button type="button" class="btn btn-danger" id="stopScan" disabled>Stop Scan</button>
+                </form>
+            </div>
+        </div>
+        <div class="card bg-dark mt-3">
+            <div class="card-body">
+                <h5 class="card-title">Scan Status</h5>
+                <div id="scanStatus" class="alert alert-info">Ready to scan</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card bg-dark">
+            <div class="card-body">
+                <h5 class="card-title">Network Visualization</h5>
+                <div id="networkVisualization"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/visualization.js') }}"></script>
+<script src="{{ url_for('static', filename='js/scanner.js') }}"></script>
+{% endblock %}
