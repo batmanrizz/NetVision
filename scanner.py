@@ -39,26 +39,13 @@ class NetworkScanner:
     def stop_scan(self):
         self.scanning = False
 
-    def _get_basic_vulnerability_info(self, port, service):
-        """Get basic vulnerability information for free version"""
-        if port in self.common_vulns:
-            return {
-                'level': 'basic',
-                'description': self.common_vulns[port],
-                'recommendations': ['Update to latest version', 'Configure proper authentication']
-            }
-        return None
-
     def _scan_worker(self, target, ports):
         try:
             self.socketio.emit('scan_status', {'status': 'starting'})
+            self.logger.debug(f"Starting scan of {target} on ports {ports}")
 
-            # Basic scan arguments - TCP Connect scan doesn't require root
-            scan_args = '-sT'  # TCP Connect scan
-
-            # Enhanced scanning for pro version
-            if self.is_pro:
-                scan_args = '-sT -sV --script=vuln'  # Include vulnerability scripts
+            # Basic TCP Connect scan - works without root
+            scan_args = '-sT -Pn'  # -Pn assumes host is up, more reliable for local scans
 
             # Start the scan
             self.nm.scan(target, ports, arguments=scan_args)
@@ -70,8 +57,7 @@ class NetworkScanner:
                 host_data = {
                     'host': host,
                     'status': self.nm[host].state(),
-                    'ports': [],
-                    'is_pro': self.is_pro
+                    'ports': []
                 }
 
                 for proto in self.nm[host].all_protocols():
@@ -81,29 +67,28 @@ class NetworkScanner:
                         port_data = {
                             'port': port,
                             'state': port_info['state'],
-                            'service': port_info.get('name', ''),
+                            'service': port_info.get('name', 'unknown'),
                             'is_pro': self.is_pro
                         }
 
-                        # Add vulnerability information if port is open
+                        # Always show basic port information
                         if port_info['state'] == 'open':
-                            if self.is_pro:
-                                # Pro version: Get detailed vulnerability data from scripts
-                                if 'script' in port_info:
-                                    port_data['vulnerabilities'] = {
-                                        'level': 'advanced',
-                                        'details': port_info['script'],
-                                        'version_info': port_info.get('version', ''),
-                                        'cpe': port_info.get('cpe', ''),
-                                        'recommendations': self._get_advanced_recommendations(port_info)
-                                    }
-                            else:
-                                # Free version: Basic vulnerability checks
-                                vuln_info = self._get_basic_vulnerability_info(port, port_info.get('name', ''))
-                                if vuln_info:
-                                    port_data['vulnerabilities'] = vuln_info
+                            # Basic version shows common vulnerability warnings
+                            if not self.is_pro and port in self.common_vulns:
+                                port_data['vulnerabilities'] = {
+                                    'level': 'basic',
+                                    'description': self.common_vulns[port]
+                                }
+                            # Pro version shows detailed scan results
+                            elif self.is_pro and 'script' in port_info:
+                                port_data['vulnerabilities'] = {
+                                    'level': 'advanced',
+                                    'details': port_info['script'],
+                                    'version_info': port_info.get('version', ''),
+                                    'recommendations': self._get_advanced_recommendations(port_info)
+                                }
 
-                        host_data['ports'].append(port_data)
+                        self.logger.debug(f"Emitting port data: {port_data}")
                         self.socketio.emit('port_data', port_data)
                         sleep(0.1)  # Prevent flooding
 

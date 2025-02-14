@@ -1,3 +1,70 @@
+document.addEventListener('DOMContentLoaded', function() {
+    const socket = io();
+    const scanForm = document.getElementById('scanForm');
+    const startScanBtn = document.getElementById('startScan');
+    const stopScanBtn = document.getElementById('stopScan');
+    const scanStatus = document.getElementById('scanStatus');
+    const proBanner = document.querySelector('.pro-banner');
+    const scanResults = document.querySelector('.scan-results');
+
+    // Show pro banner after a short delay
+    setTimeout(() => {
+        proBanner.style.display = 'block';
+    }, 2000);
+
+    socket.on('connect', () => {
+        console.log('Connected to server');
+    });
+
+    socket.on('scan_status', (data) => {
+        switch(data.status) {
+            case 'starting':
+                scanStatus.className = 'alert alert-info';
+                scanStatus.textContent = 'Scan in progress...';
+                startScanBtn.disabled = true;
+                stopScanBtn.disabled = false;
+                scanResults.innerHTML = ''; // Clear previous results
+                break;
+            case 'completed':
+                scanStatus.className = 'alert alert-success';
+                scanStatus.textContent = 'Scan completed';
+                startScanBtn.disabled = false;
+                stopScanBtn.disabled = true;
+                break;
+        }
+    });
+
+    socket.on('scan_error', (data) => {
+        scanStatus.className = 'alert alert-danger';
+        scanStatus.textContent = `Error: ${data.error}`;
+        startScanBtn.disabled = false;
+        stopScanBtn.disabled = true;
+    });
+
+    socket.on('port_data', (data) => {
+        updatePortInfo(data);
+    });
+
+    scanForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const target = document.getElementById('target').value;
+        const ports = document.getElementById('ports').value;
+
+        socket.emit('start_scan', {
+            target: target,
+            ports: ports
+        });
+    });
+
+    stopScanBtn.addEventListener('click', () => {
+        socket.emit('stop_scan');
+        startScanBtn.disabled = false;
+        stopScanBtn.disabled = true;
+        scanStatus.className = 'alert alert-warning';
+        scanStatus.textContent = 'Scan stopped by user';
+    });
+});
+
 let simulation;
 let svg;
 let width;
@@ -89,51 +156,56 @@ function getNodeColor(node) {
     return node.status === 'up' ? '#4CAF50' : '#666';  // Green for up, gray for down
 }
 
+
 function updatePortInfo(portData) {
-    const node = d3.select(`.node:has(text:contains("${portData.host}"))`);
-    if (!node.empty()) {
-        let infoDiv = document.getElementById(`port-info-${portData.port}`);
-        if (!infoDiv) {
-            infoDiv = document.createElement('div');
-            infoDiv.id = `port-info-${portData.port}`;
-            infoDiv.className = 'port-info card bg-dark mb-2';
-            document.querySelector('.scan-results').appendChild(infoDiv);
-        }
+    const scanResults = document.querySelector('.scan-results');
+    let portDiv = document.getElementById(`port-${portData.port}`);
 
-        // Format vulnerability information
-        let vulnHtml = '';
-        if (portData.vulnerabilities) {
-            const vulnInfo = portData.vulnerabilities;
-            vulnHtml = `
-                <div class="vulnerability-info ${vulnInfo.level === 'advanced' ? 'pro' : 'basic'}">
-                    <h6>Vulnerability Analysis ${vulnInfo.level === 'advanced' ? '🔒 Pro' : ''}</h6>
-                    <p>${vulnInfo.description || vulnInfo.details || 'No details available'}</p>
-                    ${vulnInfo.recommendations ? `
-                        <ul>
-                            ${vulnInfo.recommendations.map(rec => `<li>${rec}</li>`).join('')}
-                        </ul>
-                    ` : ''}
-                </div>
-            `;
-        }
+    if (!portDiv) {
+        portDiv = document.createElement('div');
+        portDiv.id = `port-${portData.port}`;
+        portDiv.className = 'card bg-dark mb-3';
+        scanResults.appendChild(portDiv);
+    }
 
-        // Basic port information (always shown)
-        infoDiv.innerHTML = `
-            <div class="card-body">
-                <h5 class="card-title">Port ${portData.port} - ${portData.service}</h5>
-                <p class="card-text">
-                    Status: <span class="badge bg-${portData.state === 'open' ? 'success' : 'danger'}">${portData.state}</span>
-                    ${portData.state === 'open' ? `<span class="badge bg-warning ms-2">Service: ${portData.service || 'Unknown'}</span>` : ''}
-                </p>
-                ${vulnHtml}
-                ${!portData.is_pro && portData.state === 'open' ? `
-                    <div class="pro-upgrade-hint">
-                        <small class="text-muted">🔒 Upgrade to Pro for detailed vulnerability analysis</small>
-                    </div>
+    // Basic port information (always shown)
+    const statusColor = portData.state === 'open' ? 'success' : 'danger';
+    let html = `
+        <div class="card-body">
+            <h5 class="card-title">Port ${portData.port} - ${portData.service}</h5>
+            <p class="card-text">
+                <span class="badge bg-${statusColor}">${portData.state}</span>
+                ${portData.state === 'open' ? `<span class="badge bg-secondary ms-2">${portData.service}</span>` : ''}
+            </p>
+    `;
+
+    // Add vulnerability information if available
+    if (portData.vulnerabilities) {
+        const vulnInfo = portData.vulnerabilities;
+        html += `
+            <div class="alert alert-warning mt-2">
+                <h6>Security Warning${vulnInfo.level === 'advanced' ? ' (Pro)' : ''}</h6>
+                <p>${vulnInfo.description || vulnInfo.details || 'Potential security risk detected'}</p>
+                ${vulnInfo.recommendations ? `
+                    <ul>
+                        ${vulnInfo.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                    </ul>
                 ` : ''}
             </div>
         `;
     }
+
+    // Add pro upgrade hint for open ports in free version
+    if (!portData.is_pro && portData.state === 'open') {
+        html += `
+            <div class="alert alert-info mt-2">
+                <small>🔒 Upgrade to Pro for detailed vulnerability analysis</small>
+            </div>
+        `;
+    }
+
+    html += '</div>';
+    portDiv.innerHTML = html;
 }
 
 function dragstarted(event) {
