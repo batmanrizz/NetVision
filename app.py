@@ -4,16 +4,13 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO
 from scanner import NetworkScanner
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev_key")
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
-# Initialize scanner
 scanner = NetworkScanner(socketio)
 
 @app.route('/')

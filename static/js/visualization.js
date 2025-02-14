@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const proBanner = document.querySelector('.pro-banner');
     const scanResults = document.querySelector('.scan-results');
 
-    // Show pro banner after a short delay
     setTimeout(() => {
         proBanner.style.display = 'block';
     }, 2000);
@@ -23,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 scanStatus.textContent = 'Scan in progress...';
                 startScanBtn.disabled = true;
                 stopScanBtn.disabled = false;
-                scanResults.innerHTML = ''; // Clear previous results
+                scanResults.innerHTML = '';
                 break;
             case 'completed':
                 scanStatus.className = 'alert alert-success';
@@ -49,11 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         const target = document.getElementById('target').value;
         const ports = document.getElementById('ports').value;
-
-        socket.emit('start_scan', {
-            target: target,
-            ports: ports
-        });
+        socket.emit('start_scan', { target, ports });
     });
 
     stopScanBtn.addEventListener('click', () => {
@@ -89,11 +84,8 @@ function initVisualization() {
 }
 
 function updateVisualization(hostData) {
-    if (!svg) {
-        initVisualization();
-    }
+    if (!svg) initVisualization();
 
-    // Add new node if it doesn't exist
     const existingNode = nodes.find(n => n.id === hostData.host);
     if (!existingNode) {
         nodes.push({
@@ -103,7 +95,6 @@ function updateVisualization(hostData) {
         });
     }
 
-    // Update visualization
     const link = svg.selectAll('.link')
         .data(links)
         .join('line')
@@ -140,8 +131,7 @@ function updateVisualization(hostData) {
                 .attr('x2', d => d.target.x)
                 .attr('y2', d => d.target.y);
 
-            node
-                .attr('transform', d => `translate(${d.x},${d.y})`);
+            node.attr('transform', d => `translate(${d.x},${d.y})`);
         });
 
     simulation.force('link').links(links);
@@ -149,13 +139,8 @@ function updateVisualization(hostData) {
 }
 
 function getNodeColor(node) {
-    // Color nodes based on vulnerability status
-    if (node.ports && node.ports.some(p => p.vulnerabilities)) {
-        return '#ff4444';  // Red for vulnerable
-    }
-    return node.status === 'up' ? '#4CAF50' : '#666';  // Green for up, gray for down
+    return node.ports && node.ports.some(p => p.vulnerabilities) ? '#ff4444' : node.status === 'up' ? '#4CAF50' : '#666';
 }
-
 
 function updatePortInfo(portData) {
     const scanResults = document.querySelector('.scan-results');
@@ -168,7 +153,6 @@ function updatePortInfo(portData) {
         scanResults.appendChild(portDiv);
     }
 
-    // Basic port information (always shown)
     const statusColor = portData.state === 'open' ? 'success' : 'danger';
     let html = `
         <div class="card-body">
@@ -176,32 +160,23 @@ function updatePortInfo(portData) {
             <p class="card-text">
                 <span class="badge bg-${statusColor}">${portData.state}</span>
                 ${portData.state === 'open' ? `<span class="badge bg-secondary ms-2">${portData.service}</span>` : ''}
-            </p>
-    `;
+            </p>`;
 
-    // Add vulnerability information if available
     if (portData.vulnerabilities) {
         const vulnInfo = portData.vulnerabilities;
         html += `
             <div class="alert alert-warning mt-2">
                 <h6>Security Warning${vulnInfo.level === 'advanced' ? ' (Pro)' : ''}</h6>
                 <p>${vulnInfo.description || vulnInfo.details || 'Potential security risk detected'}</p>
-                ${vulnInfo.recommendations ? `
-                    <ul>
-                        ${vulnInfo.recommendations.map(rec => `<li>${rec}</li>`).join('')}
-                    </ul>
-                ` : ''}
-            </div>
-        `;
+                ${vulnInfo.recommendations ? `<ul>${vulnInfo.recommendations.map(rec => `<li>${rec}</li>`).join('')}</ul>` : ''}
+            </div>`;
     }
 
-    // Add pro upgrade hint for open ports in free version
     if (!portData.is_pro && portData.state === 'open') {
         html += `
             <div class="alert alert-info mt-2">
                 <small>🔒 Upgrade to Pro for detailed vulnerability analysis</small>
-            </div>
-        `;
+            </div>`;
     }
 
     html += '</div>';

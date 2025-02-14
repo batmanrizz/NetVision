@@ -10,9 +10,8 @@ class NetworkScanner:
         self.socketio = socketio
         self.scanning = False
         self.logger = logging.getLogger(__name__)
-        self.is_pro = False  # Pro version flag
+        self.is_pro = False
 
-        # Common vulnerabilities database
         self.common_vulns = {
             21: "FTP - Potential anonymous access, clear-text authentication",
             22: "SSH - Check for outdated versions, weak ciphers",
@@ -42,12 +41,7 @@ class NetworkScanner:
     def _scan_worker(self, target, ports):
         try:
             self.socketio.emit('scan_status', {'status': 'starting'})
-            self.logger.debug(f"Starting scan of {target} on ports {ports}")
-
-            # Basic TCP Connect scan - works without root
-            scan_args = '-sT -Pn'  # -Pn assumes host is up, more reliable for local scans
-
-            # Start the scan
+            scan_args = '-sT -Pn'
             self.nm.scan(target, ports, arguments=scan_args)
 
             for host in self.nm.all_hosts():
@@ -71,43 +65,20 @@ class NetworkScanner:
                             'is_pro': self.is_pro
                         }
 
-                        # Always show basic port information
                         if port_info['state'] == 'open':
-                            # Basic version shows common vulnerability warnings
                             if not self.is_pro and port in self.common_vulns:
                                 port_data['vulnerabilities'] = {
                                     'level': 'basic',
                                     'description': self.common_vulns[port]
                                 }
-                            # Pro version shows detailed scan results
-                            elif self.is_pro and 'script' in port_info:
-                                port_data['vulnerabilities'] = {
-                                    'level': 'advanced',
-                                    'details': port_info['script'],
-                                    'version_info': port_info.get('version', ''),
-                                    'recommendations': self._get_advanced_recommendations(port_info)
-                                }
 
-                        self.logger.debug(f"Emitting port data: {port_data}")
                         self.socketio.emit('port_data', port_data)
-                        sleep(0.1)  # Prevent flooding
+                        sleep(0.1)
 
                 self.socketio.emit('host_data', host_data)
 
             self.socketio.emit('scan_status', {'status': 'completed'})
         except Exception as e:
-            self.logger.error(f"Scan error: {str(e)}")
             self.socketio.emit('scan_error', {'error': str(e)})
         finally:
             self.scanning = False
-
-    def _get_advanced_recommendations(self, port_info):
-        """Generate advanced security recommendations based on scan results"""
-        recommendations = []
-        if 'version' in port_info:
-            recommendations.append(f"Update {port_info['name']} from version {port_info['version']}")
-        if 'script' in port_info:
-            for script_name, result in port_info['script'].items():
-                if 'VULNERABLE' in result.upper():
-                    recommendations.append(f"Address {script_name} vulnerability")
-        return recommendations
