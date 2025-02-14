@@ -43,3 +43,51 @@ body {
 .port-filtered {
     fill: #ff9800;
 }
+
+.vulnerability-info {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.vulnerability-info.basic {
+    background-color: rgba(255, 152, 0, 0.1);
+    border-left: 4px solid #ff9800;
+}
+
+.vulnerability-info.pro {
+    background-color: rgba(76, 175, 80, 0.1);
+    border-left: 4px solid #4CAF50;
+}
+
+.pro-upgrade-hint {
+    margin-top: 10px;
+    padding: 8px;
+    background-color: rgba(33, 150, 243, 0.1);
+    border-radius: 4px;
+    text-align: center;
+}
+
+.scan-results {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.scan-results::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scan-results::-webkit-scrollbar-track {
+    background: #2d2d2d;
+}
+
+.scan-results::-webkit-scrollbar-thumb {
+    background: #666;
+    border-radius: 3px;
+}
+
+.port-info {
+    margin-bottom: 15px;
+    border-left: 4px solid #2196F3;
+}

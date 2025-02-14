@@ -12,6 +12,18 @@ class NetworkScanner:
         self.logger = logging.getLogger(__name__)
         self.is_pro = False  # Pro version flag
 
+        # Common vulnerabilities database
+        self.common_vulns = {
+            21: "FTP - Potential anonymous access, clear-text authentication",
+            22: "SSH - Check for outdated versions, weak ciphers",
+            23: "Telnet - Clear-text protocol, susceptible to MITM",
+            25: "SMTP - Check for open relay, version exploits",
+            80: "HTTP - Web vulnerabilities, check SSL/TLS",
+            443: "HTTPS - SSL/TLS vulnerabilities, check certificates",
+            3306: "MySQL - Database access, check auth settings",
+            3389: "RDP - Remote access vulnerabilities"
+        }
+
     def set_pro_access(self, is_pro):
         self.is_pro = is_pro
 
@@ -27,16 +39,26 @@ class NetworkScanner:
     def stop_scan(self):
         self.scanning = False
 
+    def _get_basic_vulnerability_info(self, port, service):
+        """Get basic vulnerability information for free version"""
+        if port in self.common_vulns:
+            return {
+                'level': 'basic',
+                'description': self.common_vulns[port],
+                'recommendations': ['Update to latest version', 'Configure proper authentication']
+            }
+        return None
+
     def _scan_worker(self, target, ports):
         try:
             self.socketio.emit('scan_status', {'status': 'starting'})
 
             # Basic scan arguments - TCP Connect scan doesn't require root
-            scan_args = '-sT'  
+            scan_args = '-sT'  # TCP Connect scan
 
-            # Enhanced scanning for pro version - include version detection
+            # Enhanced scanning for pro version
             if self.is_pro:
-                scan_args = '-sT -sV'  # TCP Connect scan with version detection
+                scan_args = '-sT -sV --script=vuln'  # Include vulnerability scripts
 
             # Start the scan
             self.nm.scan(target, ports, arguments=scan_args)
@@ -63,14 +85,22 @@ class NetworkScanner:
                             'is_pro': self.is_pro
                         }
 
-                        # Add extra information for pro version
+                        # Add vulnerability information
                         if self.is_pro:
-                            port_data.update({
-                                'version': port_info.get('version', ''),
-                                'product': port_info.get('product', ''),
-                                'extrainfo': port_info.get('extrainfo', ''),
-                                'cpe': port_info.get('cpe', '')
-                            })
+                            # Pro version: Get detailed vulnerability data from scripts
+                            if 'script' in port_info:
+                                port_data['vulnerabilities'] = {
+                                    'level': 'advanced',
+                                    'details': port_info['script'],
+                                    'version_info': port_info.get('version', ''),
+                                    'cpe': port_info.get('cpe', ''),
+                                    'recommendations': self._get_advanced_recommendations(port_info)
+                                }
+                        else:
+                            # Free version: Basic vulnerability checks
+                            vuln_info = self._get_basic_vulnerability_info(port, port_info.get('name', ''))
+                            if vuln_info:
+                                port_data['vulnerabilities'] = vuln_info
 
                         host_data['ports'].append(port_data)
                         self.socketio.emit('port_data', port_data)
@@ -84,3 +114,14 @@ class NetworkScanner:
             self.socketio.emit('scan_error', {'error': str(e)})
         finally:
             self.scanning = False
+
+    def _get_advanced_recommendations(self, port_info):
+        """Generate advanced security recommendations based on scan results"""
+        recommendations = []
+        if 'version' in port_info:
+            recommendations.append(f"Update {port_info['name']} from version {port_info['version']}")
+        if 'script' in port_info:
+            for script_name, result in port_info['script'].items():
+                if 'VULNERABLE' in result.upper():
+                    recommendations.append(f"Address {script_name} vulnerability")
+        return recommendations

@@ -55,7 +55,7 @@ function updateVisualization(hostData) {
         .data(d => [d])
         .join('circle')
         .attr('r', 20)
-        .attr('fill', d => d.status === 'up' ? '#4CAF50' : '#f44336');
+        .attr('fill', d => getNodeColor(d));
 
     node.selectAll('text')
         .data(d => [d])
@@ -81,31 +81,55 @@ function updateVisualization(hostData) {
     simulation.alpha(1).restart();
 }
 
-function updatePortInfo(portData) {
-    // Update port information in the visualization
-    const portRadius = 5;
-    const portDistance = 40;
+function getNodeColor(node) {
+    // Color nodes based on vulnerability status
+    if (node.ports && node.ports.some(p => p.vulnerabilities)) {
+        return '#ff4444';  // Red for vulnerable
+    }
+    return node.status === 'up' ? '#4CAF50' : '#666';  // Green for up, gray for down
+}
 
+function updatePortInfo(portData) {
     const node = d3.select(`.node:has(text:contains("${portData.host}"))`);
     if (!node.empty()) {
-        const portGroup = node.selectAll('.port-group')
-            .data([portData])
-            .join('g')
-            .attr('class', 'port-group')
-            .attr('transform', `translate(${portDistance}, 0)`);
+        // Create or update the port information display
+        let infoDiv = document.getElementById(`port-info-${portData.port}`);
+        if (!infoDiv) {
+            infoDiv = document.createElement('div');
+            infoDiv.id = `port-info-${portData.port}`;
+            infoDiv.className = 'port-info card bg-dark mb-2';
+            document.querySelector('.scan-results').appendChild(infoDiv);
+        }
 
-        portGroup.selectAll('circle')
-            .data([portData])
-            .join('circle')
-            .attr('r', portRadius)
-            .attr('class', d => `port-${d.state}`);
+        // Format vulnerability information
+        let vulnHtml = '';
+        if (portData.vulnerabilities) {
+            const vulnInfo = portData.vulnerabilities;
+            vulnHtml = `
+                <div class="vulnerability-info ${vulnInfo.level === 'advanced' ? 'pro' : 'basic'}">
+                    <h6>Vulnerability Analysis ${vulnInfo.level === 'advanced' ? '🔒 Pro' : ''}</h6>
+                    <p>${vulnInfo.description || vulnInfo.details || 'No details available'}</p>
+                    ${vulnInfo.recommendations ? `
+                        <ul>
+                            ${vulnInfo.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                        </ul>
+                    ` : ''}
+                </div>
+            `;
+        }
 
-        portGroup.selectAll('text')
-            .data([portData])
-            .join('text')
-            .attr('dx', portRadius + 5)
-            .attr('dy', 4)
-            .text(d => `${d.port}/${d.service}`);
+        infoDiv.innerHTML = `
+            <div class="card-body">
+                <h5 class="card-title">Port ${portData.port} - ${portData.service}</h5>
+                <p class="card-text">Status: <span class="badge bg-${portData.state === 'open' ? 'success' : 'danger'}">${portData.state}</span></p>
+                ${vulnHtml}
+                ${!portData.is_pro && portData.state === 'open' ? `
+                    <div class="pro-upgrade-hint">
+                        <small class="text-muted">🔒 Upgrade to Pro for detailed vulnerability analysis</small>
+                    </div>
+                ` : ''}
+            </div>
+        `;
     }
 }
 
